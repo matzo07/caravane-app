@@ -29,7 +29,7 @@ def reserve():
 
     if not name or not phone:
         return jsonify({"error": "Le nom et le numéro sont obligatoires."}), 400
-    if len(phone.replace(" ", "").replace("-", "")) < 8:
+    if len(phone.replace(" ", "").replace("-", "")) < 9:
         return jsonify({"error": "Numéro invalide."}), 400
 
     try:
@@ -148,4 +148,5 @@ def _mask_phone(phone: str) -> str:
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
 
