@@ -12,7 +12,7 @@ CORS(app)
 
 SUPABASE_URL     = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY     = os.environ.get("SUPABASE_KEY", "")
-WAVE_PAYMENT_URL = os.environ.get("WAVE_PAYMENT_URL", "https://pay.wave.com/m/M_sn_hfqF10djtEqb/c/sn/?amount=1500")
+WAVE_PAYMENT_URL = os.environ.get("WAVE_PAYMENT_URL", "https://pay.wave.com/m/M_sn_x2L9lKWP_rlJ/c/sn/?amount=1500")
 BASE_URL         = os.environ.get("BASE_URL", "http://localhost:5000")
 MAX_PER_BUS = 36
 
@@ -148,5 +148,6 @@ def _mask_phone(phone: str) -> str:
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
 
 
