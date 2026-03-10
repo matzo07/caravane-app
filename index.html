@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Caravane Universitaire · Réservation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --gold:       #e8b931;
+      --gold-light: #f5d06a;
+      --deep-blue:  #0d1f4a;
+      --red:        #c0392b;
+      --white:      #f9f5ec;
+      --glass-bg:   rgba(10, 15, 40, 0.72);
+      --glass-border: rgba(232, 185, 49, 0.3);
+      --radius:     16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── BACKGROUND SLIDER ─────────────────────────────── */
+    body {
+      font-family: 'Lato', sans-serif;
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .bg-slide {
+      position: fixed; inset: 0; z-index: 0;
+      animation: bgSwitch 14s ease-in-out infinite;
+      background-size: cover;
+      background-position: center;
+      will-change: opacity;
+    }
+    .bg-slide.s1 {
+      background-image: url('images/thies.jpg');
+      animation-delay: 0s;
+    }
+    .bg-slide.s2 {
+      background-image: url('images/uam.jpg');
+      animation: bgSwitch2 14s ease-in-out infinite;
+      animation-delay: 7s;
+    }
+
+    @keyframes bgSwitch {
+      0%,45%  { opacity: 1; }
+      55%,100%{ opacity: 0; }
+    }
+    @keyframes bgSwitch2 {
+      0%,45%  { opacity: 0; }
+      55%,100%{ opacity: 1; }
+    }
+
+    .bg-overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: linear-gradient(160deg,
+        rgba(13,31,74,0.82) 0%,
+        rgba(13,31,74,0.55) 50%,
+        rgba(5,5,10,0.85) 100%);
+    }
+
+    /* ── LAYOUT ────────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 2;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* ── LOGO ──────────────────────────────────────────── */
+    .logo-wrap {
+      margin-bottom: 18px;
+      animation: floatIn 1s ease both;
+    }
+    .logo-wrap img {
+      width: 110px; height: 110px;
+      object-fit: contain;
+      border-radius: 50%;
+      border: 3px solid var(--gold);
+      box-shadow: 0 0 28px rgba(232,185,49,0.5);
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+    @keyframes floatIn {
+      from { transform: translateY(-30px); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+    @keyframes glowPulse {
+      0%,100% { box-shadow: 0 0 28px rgba(232,185,49,0.4); }
+      50%     { box-shadow: 0 0 50px rgba(232,185,49,0.75); }
+    }
+
+    /* ── HEADINGS ──────────────────────────────────────── */
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 800;
+      text-align: center;
+      color: var(--gold);
+      text-shadow: 0 2px 24px rgba(0,0,0,0.6);
+      letter-spacing: 2px;
+      animation: floatIn 1s .15s ease both;
+      line-height: 1.2;
+    }
+    .hero-sub {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(.85rem, 2.5vw, 1.1rem);
+      text-align: center;
+      color: rgba(249,245,236,0.75);
+      letter-spacing: 3px;
+      margin-top: 6px;
+      animation: floatIn 1s .3s ease both;
+    }
+
+    /* ── CARD ──────────────────────────────────────────── */
+    .card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: var(--radius);
+      padding: 38px 40px;
+      width: 100%; max-width: 480px;
+      margin-top: 30px;
+      animation: floatIn 1s .45s ease both;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    /* ── SEAT COUNTER ──────────────────────────────────── */
+    .seat-info {
+      display: flex; gap: 12px; margin-bottom: 26px;
+    }
+    .seat-badge {
+      flex: 1; text-align: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; padding: 12px 8px;
+    }
+    .seat-badge .num {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem; font-weight: 800;
+      color: var(--gold); line-height: 1;
+    }
+    .seat-badge .lbl {
+      font-size: .72rem; color: rgba(249,245,236,0.6);
+      text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;
+    }
+
+    /* ── PROGRESS BAR ──────────────────────────────────── */
+    .progress-wrap { margin-bottom: 24px; }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: .75rem; color: rgba(249,245,236,0.6);
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      height: 6px; border-radius: 99px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--gold), #f0c040);
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+      width: 0%;
+    }
+
+    /* ── FORM ──────────────────────────────────────────── */
+    .form-label {
+      display: block;
+      font-size: .78rem; text-transform: uppercase;
+      letter-spacing: 1.5px; color: rgba(249,245,236,0.65);
+      margin-bottom: 7px;
+    }
+    .form-input {
+      width: 100%; background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(232,185,49,0.25);
+      border-radius: 10px; padding: 13px 16px;
+      font-family: 'Lato', sans-serif; font-size: 1rem;
+      color: var(--white); outline: none;
+      transition: border-color .25s, box-shadow .25s;
+      margin-bottom: 18px;
+    }
+    .form-input::placeholder { color: rgba(249,245,236,0.35); }
+    .form-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(232,185,49,0.18);
+    }
+
+    /* ── BUTTONS ───────────────────────────────────────── */
+    .btn {
+      width: 100%; padding: 15px 20px;
+      font-family: 'Cinzel', serif;
+      font-size: 1rem; font-weight: 600;
+      letter-spacing: 1.5px; cursor: pointer;
+      border: none; border-radius: 10px;
+      position: relative; overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn::after {
+      content: ''; position: absolute;
+      inset: 0; background: rgba(255,255,255,0.12);
+      transform: translateX(-100%);
+      transition: transform .35s ease;
+    }
+    .btn:hover::after { transform: translateX(0); }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold) 0%, #d4a017 100%);
+      color: var(--deep-blue);
+      box-shadow: 0 6px 24px rgba(232,185,49,0.4);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 10px 32px rgba(232,185,49,0.6);
+    }
+    .btn-primary:disabled {
+      opacity: .55; cursor: not-allowed; transform: none;
+    }
+    .btn-primary:disabled:hover { box-shadow: 0 6px 24px rgba(232,185,49,0.4); }
+
+    /* ── ERROR / SUCCESS MESSAGES ──────────────────────── */
+    .msg {
+      padding: 12px 16px; border-radius: 8px;
+      font-size: .88rem; margin-bottom: 16px;
+      display: none;
+    }
+    .msg.show { display: block; }
+    .msg-error { background: rgba(192,57,43,0.25); border: 1px solid rgba(192,57,43,0.5); color: #ff8a7a; }
+    .msg-info  { background: rgba(232,185,49,0.15); border: 1px solid rgba(232,185,49,0.4);  color: var(--gold-light); }
+
+    /* ── DIVIDER ───────────────────────────────────────── */
+    .divider {
+      text-align: center; color: rgba(249,245,236,0.3);
+      font-size: .75rem; letter-spacing: 2px;
+      margin: 20px 0; text-transform: uppercase;
+      position: relative;
+    }
+    .divider::before,.divider::after {
+      content: ''; position: absolute; top: 50%;
+      width: 30%; height: 1px;
+      background: rgba(255,255,255,0.12);
+    }
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    /* ── VIEW LIST LINK ────────────────────────────────── */
+    .link-list {
+      text-align: center; margin-top: 18px;
+      font-size: .85rem; color: rgba(249,245,236,0.6);
+    }
+    .link-list a {
+      color: var(--gold-light); text-decoration: none;
+      border-bottom: 1px dotted rgba(232,185,49,0.5);
+      transition: color .2s;
+    }
+    .link-list a:hover { color: var(--gold); }
+
+    /* ── WAVE MODAL ────────────────────────────────────── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,10,0.78);
+      backdrop-filter: blur(6px); z-index: 100;
+      align-items: center; justify-content: center;
+      animation: fadeIn .25s ease;
+    }
+    .modal-backdrop.open { display: flex; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+    .modal {
+      background: #0f1d45;
+      border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 36px 32px;
+      width: 100%; max-width: 430px;
+      text-align: center;
+      animation: slideUp .35s cubic-bezier(.34,1.56,.64,1) both;
+      position: relative;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(40px) scale(.97); opacity:0; }
+      to   { transform: translateY(0) scale(1); opacity:1; }
+    }
+
+    .modal-close {
+      position: absolute; top: 14px; right: 18px;
+      background: none; border: none; color: rgba(249,245,236,0.5);
+      font-size: 1.4rem; cursor: pointer; line-height: 1;
+      transition: color .2s;
+    }
+    .modal-close:hover { color: var(--white); }
+
+    .wave-icon {
+      font-size: 3rem; margin-bottom: 10px;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    .modal h2 {
+      font-family: 'Cinzel', serif; font-size: 1.3rem;
+      color: var(--gold); margin-bottom: 8px;
+    }
+    .modal p { font-size: .9rem; color: rgba(249,245,236,0.7); margin-bottom: 20px; line-height: 1.6; }
+
+    .amount-pill {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--gold), #d4a017);
+      color: var(--deep-blue); font-family: 'Cinzel', serif;
+      font-weight: 800; font-size: 1.4rem;
+      padding: 8px 26px; border-radius: 99px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 16px rgba(232,185,49,0.45);
+    }
+
+    .btn-wave {
+      background: #1eb4e4;
+      color: #fff; font-family: 'Cinzel', serif;
+      font-size: .95rem; font-weight: 600;
+      letter-spacing: 1px; padding: 14px 24px;
+      border: none; border-radius: 10px;
+      width: 100%; cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 18px rgba(30,180,228,0.4);
+      text-decoration: none; display: block;
+      margin-bottom: 12px;
+    }
+    .btn-wave:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(30,180,228,0.55);
+    }
+
+    .btn-confirm-paid {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--white); font-family: 'Lato', sans-serif;
+      font-size: .88rem; padding: 12px 24px;
+      border-radius: 10px; width: 100%;
+      cursor: pointer; transition: background .2s, border-color .2s;
+    }
+    .btn-confirm-paid:hover {
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    /* ── SPINNER ───────────────────────────────────────── */
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(13,31,74,0.3);
+      border-top-color: var(--deep-blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FOOTER ────────────────────────────────────────── */
+    .footer {
+      position: relative; z-index: 2; text-align: center;
+      padding: 20px; font-size: .75rem;
+      color: rgba(249,245,236,0.35); letter-spacing: 1px;
+    }
+
+    /* ── RESPONSIVE ────────────────────────────────────── */
+    @media (max-width: 520px) {
+      .card { padding: 28px 22px; }
+      .hero-title { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Backgrounds -->
+  <div class="bg-slide s1"></div>
+  <div class="bg-slide s2"></div>
+  <div class="bg-overlay"></div>
+
+  <!-- Page Content -->
+  <main class="page">
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <img src="images/logo_amicale.png" alt="Logo Amicale" onerror="this.style.display='none'" />
+    </div>
+
+    <!-- Title -->
+    <h1 class="hero-title">Caravane Universitaire</h1>
+    <p class="hero-sub">Réservation de Places · Thies → UAM</p>
+
+    <!-- Card -->
+    <div class="card">
+
+      <!-- Stats -->
+      <div class="seat-info">
+        <div class="seat-badge">
+          <div class="num" id="statLeft">–</div>
+          <div class="lbl">Places restantes</div>
+        </div>
+        <div class="seat-badge">
+          <div class="num" id="statBus">–</div>
+          <div class="lbl">Bus actuel</div>
+        </div>
+        <div class="seat-badge">
+          <div class="num" id="statTotal">–</div>
+          <div class="lbl">Inscrits</div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="progLabel">Chargement…</span>
+          <span id="progPct">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progBar"></div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="msg msg-error" id="errMsg"></div>
+      <div class="msg msg-info"  id="infoMsg"></div>
+
+      <!-- Form -->
+      <label class="form-label" for="nameInput">Votre Nom Complet</label>
+      <input class="form-input" id="nameInput" type="text" placeholder="Ex : Moussa Diop" autocomplete="name" />
+
+      <label class="form-label" for="phoneInput">Numéro Wave / Téléphone</label>
+      <input class="form-input" id="phoneInput" type="tel" placeholder="Ex : 77 123 45 67" autocomplete="tel" />
+
+      <button class="btn btn-primary" id="reserveBtn" onclick="handleReserve()">
+        Réserver ma Place
+      </button>
+
+      <div class="divider">ou</div>
+
+      <div class="link-list">
+        <a href="list.html">Voir la liste des inscrits →</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">© Amicale Universitaire · Caravane Thies–UAM</footer>
+
+  <!-- ── WAVE MODAL ────────────────────────────────────── -->
+  <div class="modal-backdrop" id="waveModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="wave-icon">💙</div>
+      <h2>Paiement Wave</h2>
+      <p>Payez <strong>1 500 FCFA</strong> via Wave pour confirmer votre place dans la caravane.</p>
+      <div class="amount-pill">1 500 F</div>
+
+      <a class="btn-wave" id="waveLink" href="#" target="_blank" rel="noopener" onclick="onWaveClick()">
+        💳 Payer sur Wave
+      </a>
+      <button class="btn-confirm-paid" id="confirmBtn" onclick="confirmPayment()" style="display:none">
+        ✅ J'ai effectué le paiement
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentToken = null;
+    let waveClicked   = false;
+
+    // ── Load stats on page load ───────────────────────────
+    async function loadStats() {
+      try {
+        const r = await fetch('/api/stats');
+        const d = await r.json();
+        if (d.error) return;
+        document.getElementById('statLeft').textContent  = d.seats_left_in_bus;
+        document.getElementById('statBus').textContent   = d.current_bus;
+        document.getElementById('statTotal').textContent = d.total_confirmed;
+        const pct = Math.round((d.seats_taken_in_bus / d.max_per_bus) * 100);
+        document.getElementById('progBar').style.width   = pct + '%';
+        document.getElementById('progPct').textContent   = pct + '%';
+        document.getElementById('progLabel').textContent =
+          `Bus ${d.current_bus} — ${d.seats_taken_in_bus}/${d.max_per_bus} places`;
+      } catch(e) { /* silently fail */ }
+    }
+    loadStats();
+
+    // ── Handle reservation form ───────────────────────────
+    async function handleReserve() {
+      hideMessages();
+      const name  = document.getElementById('nameInput').value.trim();
+      const phone = document.getElementById('phoneInput').value.trim();
+
+      if (!name) { return showError('Veuillez entrer votre nom.'); }
+      if (!phone || phone.replace(/\D/g,'').length < 8)
+        return showError('Veuillez entrer un numéro valide (min 8 chiffres).');
+
+      const btn = document.getElementById('reserveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Traitement…';
+
+      try {
+        const res = await fetch('/api/reserve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          showError(data.error);
+        } else {
+          currentToken = data.token;
+          document.getElementById('waveLink').href = data.wave_url;
+          waveClicked = false;
+          document.getElementById('confirmBtn').style.display = 'none';
+          openModal();
+          if (data.message) showInfo(data.message);
+        }
+      } catch(e) {
+        showError('Erreur de connexion. Vérifiez votre internet.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Réserver ma Place';
+      }
+    }
+
+    // ── Wave payment click → reveal confirm button ────────
+    function onWaveClick() {
+      waveClicked = true;
+      setTimeout(() => {
+        document.getElementById('confirmBtn').style.display = 'block';
+      }, 3000);
+    }
+
+    // ── Confirm payment ───────────────────────────────────
+    async function confirmPayment() {
+      if (!currentToken) return;
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="border-top-color:#fff"></span> Vérification…';
+
+      try {
+        const res = await fetch('/api/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: currentToken })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          window.location.href = `success.html?token=${currentToken}&bus=${data.reservation.bus_number}&seat=${data.reservation.seat_number}&name=${encodeURIComponent(data.reservation.name)}`;
+        } else {
+          showError(data.error || 'Erreur de confirmation.');
+          closeModal();
+        }
+      } catch(e) {
+        showError('Erreur de connexion. Réessayez.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ J\'ai effectué le paiement';
+      }
+    }
+
+    // ── Modal ─────────────────────────────────────────────
+    function openModal()  { document.getElementById('waveModal').classList.add('open'); }
+    function closeModal() { document.getElementById('waveModal').classList.remove('open'); }
+
+    // ── Messages ──────────────────────────────────────────
+    function showError(msg) {
+      const el = document.getElementById('errMsg');
+      el.textContent = msg; el.classList.add('show');
+    }
+    function showInfo(msg) {
+      const el = document.getElementById('infoMsg');
+      el.textContent = msg; el.classList.add('show');
+    }
+    function hideMessages() {
+      document.getElementById('errMsg').classList.remove('show');
+      document.getElementById('infoMsg').classList.remove('show');
+    }
+
+    // ── Enter key submits ─────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !document.getElementById('waveModal').classList.contains('open'))
+        handleReserve();
+    });
+  </script>
+</body>
+</html>
