@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import uuid
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import uuid
 
 load_dotenv()
 
@@ -12,15 +12,22 @@ CORS(app)
 
 SUPABASE_URL     = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY     = os.environ.get("SUPABASE_KEY", "")
-WAVE_PAYMENT_URL = os.environ.get("WAVE_PAYMENT_URL", "https://pay.wave.com/m/M_sn_x2L9lKWP_rlJ/c/sn/?amount=1500")
-BASE_URL         = os.environ.get("BASE_URL", "http://localhost:5000")
-MAX_PER_BUS = 36
-
+MAX_PER_BUS      = 36
 
 def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ─── DEBUG ────────────────────────────────────────────────
+@app.route("/api/debug", methods=["GET"])
+def debug():
+    wave_url = os.environ.get("WAVE_PAYMENT_URL", "NON DEFINI")
+    return jsonify({
+        "WAVE_PAYMENT_URL": wave_url,
+        "SUPABASE_URL": os.environ.get("SUPABASE_URL", "NON DEFINI")[:30] + "...",
+        "BASE_URL": os.environ.get("BASE_URL", "NON DEFINI"),
+    })
 
+# ─── RÉSERVER ─────────────────────────────────────────────
 @app.route("/api/reserve", methods=["POST"])
 def reserve():
     data  = request.get_json()
@@ -29,7 +36,7 @@ def reserve():
 
     if not name or not phone:
         return jsonify({"error": "Le nom et le numéro sont obligatoires."}), 400
-    if len(phone.replace(" ", "").replace("-", "")) < 9:
+    if len(phone.replace(" ", "").replace("-", "")) < 8:
         return jsonify({"error": "Numéro invalide."}), 400
 
     try:
@@ -40,78 +47,85 @@ def reserve():
             if row["status"] == "confirmed":
                 return jsonify({"error": "Ce numéro a déjà une place confirmée."}), 409
             if row["status"] == "pending":
-                success_url = f"{BASE_URL}/success.html?token={row['token']}"
-                wave_url = WAVE_PAYMENT_URL
-                return jsonify({"token": row["token"], "wave_url": wave_url, "message": "Réservation en attente déjà existante."})
+                return jsonify({
+                    "success": True,
+                    "token": row["token"],
+                    "message": "Réservation en attente existante."
+                })
 
-        token       = str(uuid.uuid4())
-        success_url = f"{BASE_URL}/success.html?token={token}"
-        wave_url = WAVE_PAYMENT_URL
-
+        token = str(uuid.uuid4())
         supabase.table("reservations").insert({
-            "name": name, "phone": phone, "status": "pending", "token": token
+            "name": name, "phone": phone,
+            "status": "pending", "token": token
         }).execute()
 
-        return jsonify({"success": True, "token": token, "wave_url": wave_url})
+        return jsonify({"success": True, "token": token})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+# ─── CONFIRMER AVEC RÉFÉRENCE WAVE ────────────────────────
 @app.route("/api/confirm", methods=["POST"])
 def confirm():
-    data  = request.get_json()
-    token = (data.get("token") or "").strip()
+    data      = request.get_json()
+    token     = (data.get("token") or "").strip()
+    wave_ref  = (data.get("wave_ref") or "").strip().upper()
+
     if not token:
         return jsonify({"error": "Token manquant."}), 400
+    if not wave_ref or len(wave_ref) < 4:
+        return jsonify({"error": "Veuillez entrer votre référence de transaction Wave."}), 400
 
     try:
         supabase = get_supabase()
-        result   = supabase.table("reservations").select("*").eq("token", token).execute()
 
+        # Vérifier que cette référence Wave n'a pas déjà été utilisée
+        ref_check = supabase.table("reservations").select("id,phone").eq("wave_ref", wave_ref).eq("status", "confirmed").execute()
+        if ref_check.data:
+            return jsonify({"error": "Cette référence Wave a déjà été utilisée."}), 409
+
+        # Trouver la réservation
+        result = supabase.table("reservations").select("*").eq("token", token).execute()
         if not result.data:
             return jsonify({"error": "Réservation introuvable."}), 404
 
         reservation = result.data[0]
 
-        # Déjà confirmé
         if reservation["status"] == "confirmed":
             return jsonify({"success": True, "reservation": {
                 "name": reservation["name"], "phone": reservation["phone"],
                 "bus_number": reservation["bus_number"], "seat_number": reservation["seat_number"]
             }})
 
-        # Pending → Wave a redirigé ici donc paiement effectué → on confirme
-        if reservation["status"] == "pending":
-            count_result = supabase.table("reservations").select("id", count="exact").eq("status", "confirmed").execute()
-            total        = count_result.count or 0
-            bus_number   = (total // MAX_PER_BUS) + 1
-            seat_number  = (total % MAX_PER_BUS) + 1
+        # Assigner bus et siège
+        count_result = supabase.table("reservations").select("id", count="exact").eq("status", "confirmed").execute()
+        total       = count_result.count or 0
+        bus_number  = (total // MAX_PER_BUS) + 1
+        seat_number = (total % MAX_PER_BUS) + 1
 
-            updated = supabase.table("reservations").update({
-                "status": "confirmed",
-                "bus_number": bus_number,
-                "seat_number": seat_number
-            }).eq("token", token).execute()
+        updated = supabase.table("reservations").update({
+            "status": "confirmed",
+            "bus_number": bus_number,
+            "seat_number": seat_number,
+            "wave_ref": wave_ref
+        }).eq("token", token).execute()
 
-            r = updated.data[0]
-            return jsonify({"success": True, "reservation": {
-                "name": r["name"], "phone": r["phone"],
-                "bus_number": r["bus_number"], "seat_number": r["seat_number"]
-            }})
-
-        return jsonify({"success": False, "error": "Statut inconnu."}), 400
+        r = updated.data[0]
+        return jsonify({"success": True, "reservation": {
+            "name": r["name"], "phone": r["phone"],
+            "bus_number": r["bus_number"], "seat_number": r["seat_number"]
+        }})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+# ─── LISTE ────────────────────────────────────────────────
 @app.route("/api/reservations", methods=["GET"])
 def get_reservations():
     try:
         supabase = get_supabase()
         result   = supabase.table("reservations").select("name,phone,bus_number,seat_number").eq("status", "confirmed").order("bus_number").order("seat_number").execute()
-        buses    = {}
+        buses = {}
         for r in result.data:
             bus = r["bus_number"]
             if bus not in buses:
@@ -124,7 +138,7 @@ def get_reservations():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+# ─── STATS ────────────────────────────────────────────────
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
     try:
@@ -132,7 +146,8 @@ def get_stats():
         count_result = supabase.table("reservations").select("id", count="exact").eq("status", "confirmed").execute()
         total        = count_result.count or 0
         return jsonify({
-            "total_confirmed": total, "current_bus": (total // MAX_PER_BUS) + 1,
+            "total_confirmed": total,
+            "current_bus": (total // MAX_PER_BUS) + 1,
             "seats_taken_in_bus": total % MAX_PER_BUS,
             "seats_left_in_bus": MAX_PER_BUS - (total % MAX_PER_BUS),
             "max_per_bus": MAX_PER_BUS
@@ -140,14 +155,9 @@ def get_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 def _mask_phone(phone: str) -> str:
     if len(phone) <= 4: return phone
     return phone[:2] + "*" * (len(phone) - 4) + phone[-2:]
 
-
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
-
-
-
