@@ -12,7 +12,7 @@ CORS(app)
 
 SUPABASE_URL     = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY     = os.environ.get("SUPABASE_KEY", "")
-WAVE_PAYMENT_URL = os.environ.get("WAVE_PAYMENT_URL", "")
+WAVE_PAYMENT_URL = os.environ.get("WAVE_PAYMENT_URL", "https://pay.wave.com/m/M_sn_hfqF10djtEqb/c/sn/?amount=1500")
 BASE_URL         = os.environ.get("BASE_URL", "http://localhost:5000")
 MAX_PER_BUS = 36
 
@@ -41,12 +41,12 @@ def reserve():
                 return jsonify({"error": "Ce numéro a déjà une place confirmée."}), 409
             if row["status"] == "pending":
                 success_url = f"{BASE_URL}/success.html?token={row['token']}"
-                wave_url = f"{WAVE_PAYMENT_URL}?amount=1500&client_reference={row['token']}&note=Caravane+Universitaire&success_url={success_url}"
+                wave_url = WAVE_PAYMENT_URL
                 return jsonify({"token": row["token"], "wave_url": wave_url, "message": "Réservation en attente déjà existante."})
 
         token       = str(uuid.uuid4())
         success_url = f"{BASE_URL}/success.html?token={token}"
-        wave_url    = f"{WAVE_PAYMENT_URL}?amount=1500&client_reference={token}&note=Caravane+Universitaire&success_url={success_url}"
+        wave_url = WAVE_PAYMENT_URL
 
         supabase.table("reservations").insert({
             "name": name, "phone": phone, "status": "pending", "token": token
@@ -148,3 +148,4 @@ def _mask_phone(phone: str) -> str:
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
+
