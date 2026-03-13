@@ -127,9 +127,11 @@
     font-size: .85rem;
     font-family: 'Cinzel', serif;
     letter-spacing: 2px;
-    color: var(--gold);
-    text-shadow: 0 0 18px rgba(232,185,49,0.6), 0 2px 8px rgba(0,0,0,0.8);
-    animation: glowPulse 3s ease-in-out infinite;
+    color: #4fc3f7;
+    text-shadow: 0 0 18px rgba(79,195,247,0.6), 0 2px 8px rgba(0,0,0,0.8);
+    @keyframes blueGlow {
+    0%,100% { text-shadow: 0 0 12px rgba(79,195,247,0.4), 0 2px 8px rgba(0,0,0,0.8); }
+    50%     { text-shadow: 0 0 28px rgba(79,195,247,0.85), 0 2px 8px rgba(0,0,0,0.8); }
     }
     @media(max-width:520px){.card{padding:28px 22px}.hero-title{font-size:1.6rem}.modal{padding:28px 20px}}
   </style>
