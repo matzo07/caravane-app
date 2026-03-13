@@ -121,7 +121,16 @@
     .spinner{width:20px;height:20px;border:3px solid rgba(13,31,74,.3);border-top-color:var(--deep-blue);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
 
-    .footer{position:relative;z-index:2;text-align:center;padding:20px;font-size:.75rem;color:rgba(249,245,236,.35);letter-spacing:1px}
+    .footer {
+    position: relative; z-index: 2;
+    text-align: center; padding: 20px;
+    font-size: .85rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-shadow: 0 0 18px rgba(232,185,49,0.6), 0 2px 8px rgba(0,0,0,0.8);
+    animation: glowPulse 3s ease-in-out infinite;
+    }
     @media(max-width:520px){.card{padding:28px 22px}.hero-title{font-size:1.6rem}.modal{padding:28px 20px}}
   </style>
 </head>
@@ -165,7 +174,7 @@
     </div>
   </main>
 
-  <footer class="footer">© By Anonymous</footer>
+  <footer class="footer">✦ © By Anonymous ✦</footer>
 
   <!-- ══ MODAL ══════════════════════════════════════════ -->
   <div class="modal-backdrop" id="waveModal">
@@ -383,5 +392,6 @@
   </script>
 </body>
 </html>
+
 
 
