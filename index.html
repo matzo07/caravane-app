@@ -16,11 +16,18 @@
     body{font-family:'Lato',sans-serif;color:var(--white);min-height:100vh;overflow-x:hidden;position:relative}
 
     .bg-slide{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;will-change:opacity}
-    .bg-slide.s1{background-image:url('images/thies.jpg');animation:bgS 14s ease-in-out infinite}
-    .bg-slide.s2{background-image:url('images/uam.jpg');animation:bgS2 14s ease-in-out infinite;animation-delay:7s}
-    @keyframes bgS{0%,45%{opacity:1}55%,100%{opacity:0}}
-    @keyframes bgS2{0%,45%{opacity:0}55%,100%{opacity:1}}
-    .bg-overlay{position:fixed;inset:0;z-index:1;background:linear-gradient(160deg,rgba(13,31,74,.82) 0%,rgba(13,31,74,.55) 50%,rgba(5,5,10,.85) 100%)}
+    .bg-slide.s1 { background-image: url('images/thies.jpg'); animation: slide1 16s ease-in-out infinite; }
+    .bg-slide.s2 { background-image: url('images/uam.jpg');   animation: slide2 16s ease-in-out infinite; }
+    @keyframes slide1 {
+    0%, 37.5% { opacity: 1; }
+    50%, 87.5% { opacity: 0; }
+    100%       { opacity: 1; }
+    }
+    @keyframes slide2 {
+    0%, 37.5% { opacity: 0; }
+    50%, 87.5% { opacity: 1; }
+    100%       { opacity: 0; }
+    }
 
     .page{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
 
@@ -376,4 +383,5 @@
   </script>
 </body>
 </html>
+
 
