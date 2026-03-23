@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin – Caravane Dakar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+
+    /* LOGIN */
+    #login-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100vh; gap: 16px;
+    }
+    #login-screen h1 { color: #f0b429; font-size: 1.6rem; }
+    #login-screen input {
+      padding: 12px 16px; border-radius: 8px; border: 1px solid #333;
+      background: #1c1f2e; color: white; font-size: 1rem; width: 280px;
+    }
+    #login-screen button {
+      padding: 12px 32px; background: #f0b429; color: #000;
+      border: none; border-radius: 8px; font-weight: bold;
+      cursor: pointer; font-size: 1rem;
+    }
+    #login-error { color: #ff6b6b; font-size: 0.9rem; }
+
+    /* ADMIN */
+    #admin-screen { display: none; padding: 24px; }
+    .header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .header h1 { color: #f0b429; font-size: 1.4rem; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .stats { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat-card {
+      background: #1c1f2e; border-radius: 10px; padding: 16px 24px;
+      text-align: center; flex: 1; min-width: 120px;
+    }
+    .stat-card .number { font-size: 2rem; font-weight: bold; color: #f0b429; }
+    .stat-card .label { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-top: 4px; }
+
+    /* FILTRES */
+    .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 16px; border-radius: 20px; border: 1px solid #333;
+      background: #1c1f2e; color: #aaa; cursor: pointer; font-size: 0.85rem;
+    }
+    .filter-btn.active { background: #f0b429; color: #000; border-color: #f0b429; font-weight: bold; }
+
+    /* TABLE */
+    .table-container { overflow-x: auto; border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; background: #1c1f2e; }
+    thead th {
+      padding: 12px 16px; text-align: left; font-size: 0.75rem;
+      text-transform: uppercase; color: #888; border-bottom: 1px solid #2a2d3e;
+    }
+    tbody tr { border-bottom: 1px solid #2a2d3e; transition: background 0.2s; }
+    tbody tr:hover { background: #232638; }
+    tbody td { padding: 12px 16px; font-size: 0.9rem; }
+
+    .badge {
+      padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;
+    }
+    .badge.confirmed { background: #1a3a2a; color: #4caf50; }
+    .badge.pending   { background: #3a2a1a; color: #f0b429; }
+
+    .btn-delete {
+      background: transparent; border: 1px solid #c0392b; color: #e74c3c;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+    }
+    .btn-delete:hover { background: #c0392b; color: white; }
+
+    .btn-export {
+      padding: 10px 20px; background: #2ecc71; color: #000;
+      border: none; border-radius: 8px; font-weight: bold;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .btn-refresh {
+      padding: 10px 20px; background: #1c1f2e; color: #aaa;
+      border: 1px solid #333; border-radius: 8px;
+      cursor: pointer; font-size: 0.85rem;
+    }
+    .btn-logout {
+      padding: 10px 20px; background: transparent; color: #e74c3c;
+      border: 1px solid #e74c3c; border-radius: 8px;
+      cursor: pointer; font-size: 0.85rem;
+    }
+
+    .empty { text-align: center; padding: 48px; color: #555; }
+    #search {
+      padding: 10px 16px; background: #1c1f2e; border: 1px solid #333;
+      border-radius: 8px; color: white; font-size: 0.9rem; width: 240px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <h1>🔐 Admin Caravane Dakar</h1>
+  <input type="password" id="password-input" placeholder="Mot de passe admin" />
+  <button onclick="login()">Connexion</button>
+  <span id="login-error"></span>
+</div>
+
+<!-- ADMIN -->
+<div id="admin-screen">
+  <div class="header">
+    <h1>🚌 Admin – Caravane Dakar</h1>
+    <div class="header-actions">
+      <input type="text" id="search" placeholder="🔍 Rechercher..." oninput="renderTable()" />
+      <button class="btn-export" onclick="exportCSV()">⬇ Exporter CSV</button>
+      <button class="btn-refresh" onclick="loadData()">↻ Actualiser</button>
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="number" id="stat-total">–</div><div class="label">Total</div></div>
+    <div class="stat-card"><div class="number" id="stat-confirmed">–</div><div class="label">Confirmés</div></div>
+    <div class="stat-card"><div class="number" id="stat-pending">–</div><div class="label">En attente</div></div>
+    <div class="stat-card"><div class="number" id="stat-bus">–</div><div class="label">Bus actuel</div></div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
+    <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmés</button>
+    <button class="filter-btn" onclick="setFilter('pending', this)">En attente</button>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nom</th>
+          <th>Téléphone</th>
+          <th>Statut</th>
+          <th>Bus</th>
+          <th>Siège</th>
+          <th>Réf. Wave</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let allData = [];
+  let currentFilter = 'all';
+  let adminPassword = '';
+
+  function login() {
+    const pwd = document.getElementById('password-input').value;
+    if (!pwd) return;
+    adminPassword = pwd;
+    loadData();
+  }
+
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+
+  async function loadData() {
+    try {
+      const res = await fetch('/api/admin/reservations', {
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      if (res.status === 401) {
+        document.getElementById('login-error').textContent = 'Mot de passe incorrect.';
+        return;
+      }
+      const json = await res.json();
+      allData = json.reservations || [];
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-screen').style.display = 'block';
+
+      updateStats();
+      renderTable();
+    } catch (e) {
+      document.getElementById('login-error').textContent = 'Erreur de connexion.';
+    }
+  }
+
+  function updateStats() {
+    const confirmed = allData.filter(r => r.status === 'confirmed').length;
+    const pending   = allData.filter(r => r.status === 'pending').length;
+    const bus       = confirmed > 0 ? Math.ceil(confirmed / 36) : 1;
+    document.getElementById('stat-total').textContent     = allData.length;
+    document.getElementById('stat-confirmed').textContent = confirmed;
+    document.getElementById('stat-pending').textContent   = pending;
+    document.getElementById('stat-bus').textContent       = bus;
+  }
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  }
+
+  function renderTable() {
+    const search  = document.getElementById('search').value.toLowerCase();
+    let filtered  = allData;
+
+    if (currentFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === currentFilter);
+    }
+    if (search) {
+      filtered = filtered.filter(r =>
+        (r.name || '').toLowerCase().includes(search) ||
+        (r.phone || '').toLowerCase().includes(search) ||
+        (r.wave_ref || '').toLowerCase().includes(search)
+      );
+    }
+
+    const tbody = document.getElementById('table-body');
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">Aucune réservation trouvée.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r.name || '–'}</td>
+        <td>${r.phone || '–'}</td>
+        <td><span class="badge ${r.status}">${r.status === 'confirmed' ? 'Confirmé' : 'En attente'}</span></td>
+        <td>${r.bus_number || '–'}</td>
+        <td>${r.seat_number || '–'}</td>
+        <td>${r.wave_ref || '–'}</td>
+        <td>${new Date(r.created_at).toLocaleDateString('fr-FR')}</td>
+        <td><button class="btn-delete" onclick="deleteReservation('${r.id}', '${r.name}')">Supprimer</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function deleteReservation(id, name) {
+    if (!confirm(`Supprimer la réservation de "${name}" ?`)) return;
+    try {
+      const res = await fetch(`/api/admin/delete/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Password': adminPassword }
+      });
+      const json = await res.json();
+      if (json.success) {
+        allData = allData.filter(r => r.id !== id);
+        updateStats();
+        renderTable();
+      }
+    } catch (e) {
+      alert('Erreur lors de la suppression.');
+    }
+  }
+
+  function exportCSV() {
+    const confirmed = allData.filter(r => r.status === 'confirmed');
+    if (confirmed.length === 0) { alert('Aucune réservation confirmée à exporter.'); return; }
+
+    const headers = ['Nom', 'Téléphone', 'Bus', 'Siège', 'Réf. Wave', 'Date'];
+    const rows = confirmed.map(r => [
+      r.name, r.phone, r.bus_number, r.seat_number,
+      r.wave_ref || '', new Date(r.created_at).toLocaleDateString('fr-FR')
+    ]);
+
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'caravane-dakar.csv'; a.click();
+  }
+
+  function logout() {
+    adminPassword = '';
+    allData = [];
+    document.getElementById('admin-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('password-input').value = '';
+  }
+</script>
+</body>
+</html>
