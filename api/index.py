@@ -159,5 +159,33 @@ def _mask_phone(phone: str) -> str:
     if len(phone) <= 4: return phone
     return phone[:2] + "*" * (len(phone) - 4) + phone[-2:]
 
+# ─── ADMIN - Liste complète ────────────────────────────────
+@app.route("/api/admin/reservations", methods=["GET"])
+def admin_reservations():
+    password = request.headers.get("X-Admin-Password", "")
+    if password != os.environ.get("ADMIN_PASSWORD", "admin123"):
+        return jsonify({"error": "Non autorisé."}), 401
+
+    try:
+        supabase = get_supabase()
+        result = supabase.table("reservations").select("*").order("created_at", desc=True).execute()
+        return jsonify({"reservations": result.data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ─── ADMIN - Supprimer ────────────────────────────────────
+@app.route("/api/admin/delete/<reservation_id>", methods=["DELETE"])
+def admin_delete(reservation_id):
+    password = request.headers.get("X-Admin-Password", "")
+    if password != os.environ.get("ADMIN_PASSWORD", "admin123"):
+        return jsonify({"error": "Non autorisé."}), 401
+
+    try:
+        supabase = get_supabase()
+        supabase.table("reservations").delete().eq("id", reservation_id).execute()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
