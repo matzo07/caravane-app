@@ -480,8 +480,60 @@
 
     setTimeout(() => el.remove(), (duration + delay) * 1000 + 500);
   }
+  /* ════════════════════════════════════════
+   SON DE MOUTON SYNTHÉTISÉ 🐑
+════════════════════════════════════════ */
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+  function playMbeee() {
+    const now = audioCtx.currentTime;
+
+    // Oscillateur principal — voix du mouton
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+  
+    // LFO pour faire vibrer la voix (chevrotement)
+    const lfo = audioCtx.createOscillator();
+    const lfoGain = audioCtx.createGain();
+  
+    // Config LFO (tremblotement)
+    lfo.frequency.setValueAtTime(6, now);
+    lfoGain.gain.setValueAtTime(18, now);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+  
+    // Config oscillateur principal
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.linearRampToValueAtTime(220, now + 0.12); // descend → "Mbeee"
+    osc.frequency.linearRampToValueAtTime(180, now + 0.35);
+    osc.frequency.linearRampToValueAtTime(150, now + 0.6);
+  
+    // Filtre passe-bas pour adoucir (moins aigu)
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(900, now);
+    filter.frequency.linearRampToValueAtTime(400, now + 0.6);
+  
+    // Enveloppe du volume
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.05); // attaque
+    gain.gain.setValueAtTime(0.22, now + 0.4);           // sustain
+    gain.gain.linearRampToValueAtTime(0, now + 0.65);    // release
+  
+    // Connexions
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+  
+    // Lancer
+    osc.start(now);
+    lfo.start(now);
+    osc.stop(now + 0.7);
+    lfo.stop(now + 0.7);
+  }
   function spawnMbeee(leftPct) {
+    playMbeee();
     const el  = document.createElement('div');
     el.className = 'mbeee';
     el.textContent = MBEEES[Math.floor(Math.random()*MBEEES.length)];
